@@ -4,13 +4,28 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <name>Mc-Rankings</name>
+    <name>${project.groupId}:${project.artifactId}</name>
     <description>Library to create leaderboards on mc-rankings.com</description>
     <url>https://mc-rankings.com</url>
 
     <groupId>de.hannes</groupId>
     <artifactId>mcrankings</artifactId>
     <version>1.0.0</version>
+
+    <developers>
+        <developer>
+            <name>Hannes Thöne</name>
+            <email>thoenehannes@gmail.com</email>
+            <organization>Hannes Thöne</organization>
+            <organizationUrl>https://github.com/hthoene</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/hthoene/McRankings.git</connection>
+        <developerConnection>scm:git:ssh://github.com:hthoene/McRankings.git</developerConnection>
+        <url>http://github.com/hthoene/McRankings/tree/master</url>
+    </scm>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
