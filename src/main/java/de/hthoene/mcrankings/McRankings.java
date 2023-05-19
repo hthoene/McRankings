@@ -9,7 +9,7 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.UUID;
@@ -17,6 +17,9 @@ import java.util.logging.Level;
 
 /**
  * McRankings core API
+ *
+ * This class provides core functionality for interacting with the McRankings API.
+ * It allows you to register your server, create and manage leaderboards, and submit scores.
  *
  * @author      Hannes Thöne
  * @version     1.0.0
@@ -32,10 +35,10 @@ public class McRankings {
     private static final String API_URL = "https://mc-rankings.com/api/v1/";
 
     /**
-     * Returns a McRankings instance to access the API
+     * Creates a new McRankings instance.
      *
-     * @param  javaPlugin your plugin instance
-     * @see         McRankings
+     * @param javaPlugin your plugin instance
+     * @see   McRankings
      */
     public McRankings(JavaPlugin javaPlugin) {
         this.javaPlugin = javaPlugin;
@@ -46,11 +49,12 @@ public class McRankings {
     }
 
     /**
-     * Returns a leaderboard instance to access features
+     * Sets the plugin name for the leaderboard.
      *
-     * @param  pluginName the id of the leaderboard, has to be unique
-     * @return      the McRankings instance
-     * @see         McRankings
+     * @param  pluginName the name of your plugin, shows up in the url of the leaderboard
+     * @return the McRankings instance
+     * @throws IllegalArgumentException if the plugin name contains white spaces
+     * @see    McRankings
      */
     public McRankings withPluginName(String pluginName) {
         if(pluginName.contains(" ")) {
@@ -61,14 +65,14 @@ public class McRankings {
     }
 
     /**
-     * Returns a leaderboard instance to access features
+     * Gets a leaderboard instance for the specified leaderboard ID.
      *
-     * @param  leaderboardId the id of the leaderboard, has to be unique
-     * @param  title the title of the leaderboard, will be displayed on the website
-     * @param  metric the metric of the leaderboard, this is a value that is shown behind the score, e.g. 'wins'
+     * @param  leaderboardId the id of the leaderboard, must be unique
+     * @param  title the title of the leaderboard, displayed on the website
+     * @param  metric the metric of the leaderboard, shown behind the score (e.g., 'wins')
      * @param  higherIsBetter set this to true if a higher score is better than a lower score
-     * @return      a leaderboard instance
-     * @see         Leaderboard
+     * @return a leaderboard instance
+     * @see    Leaderboard
      */
     public Leaderboard getLeaderboard(int leaderboardId, String title, String metric, boolean higherIsBetter) {
         String leaderboardConfigPath = "leaderboards." + pluginName + "." + leaderboardId;
@@ -171,7 +175,7 @@ public class McRankings {
 
     private void createConfiguration() {
         try {
-            Files.createDirectories(Path.of("plugins/mc-rankings"));
+            Files.createDirectories(Paths.get("plugins/mc-rankings"));
             if (configurationFile.createNewFile()) {
                 yamlConfiguration = YamlConfiguration.loadConfiguration(configurationFile);
                 yamlConfiguration.options().copyDefaults(true);
