@@ -1,4 +1,4 @@
-package de.hannes.mcrankings;
+package de.hthoene.mcrankings;
 
 import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;

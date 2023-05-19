@@ -8,7 +8,7 @@
     <description>Library to create leaderboards on mc-rankings.com</description>
     <url>https://mc-rankings.com</url>
 
-    <groupId>de.hannes</groupId>
+    <groupId>de.hthoene</groupId>
     <artifactId>mcrankings</artifactId>
     <version>1.0.0</version>
 
