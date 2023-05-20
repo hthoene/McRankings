@@ -23,7 +23,7 @@ import java.util.logging.Level;
  * A full guide can be found <a href="https://mc-rankings.com/guide">here</a>
  *
  * @author Hannes Thoene
- * @version 1.0.3
+ * @version 1.0.4
  * @since 20.05.2023
  */
 public class McRankings {
