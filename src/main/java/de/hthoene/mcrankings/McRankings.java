@@ -16,14 +16,15 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * McRankings core API
+ * McRankings is a library to implement web-based leaderboards
+ * to your plugin. Please do not modify this code yourself
+ * if you do not know what you are doing - it may break the
+ * system and disables mc-rankings for the complete server.
+ * A full guide can be found <a href="https://mc-rankings.com/guide">here</a>
  *
- * This class provides core functionality for interacting with the McRankings API.
- * It allows you to register your server, create and manage leaderboards, and submit scores.
- *
- * @author      Hannes Thöne
- * @version     1.0.0
- * @since       1.0.0
+ * @author Hannes Thoene
+ * @version 1.0.3
+ * @since 20.05.2023
  */
 public class McRankings {
 
@@ -34,28 +35,15 @@ public class McRankings {
 
     private static final String API_URL = "https://mc-rankings.com/api/v1/";
 
-    /**
-     * Creates a new McRankings instance.
-     *
-     * @param javaPlugin your plugin instance
-     * @see   McRankings
-     */
     public McRankings(JavaPlugin javaPlugin) {
         this.javaPlugin = javaPlugin;
         pluginName = javaPlugin.getName();
         configurationFile = new File("plugins/mc-rankings", "mc-rankings.yml");
+        log(Level.INFO, "Plugin is using mc-rankings.com - You will find a settings file in the mc-rankings folder.");
         createConfiguration();
         loadServer();
     }
 
-    /**
-     * Sets the plugin name for the leaderboard.
-     *
-     * @param  pluginName the name of your plugin, shows up in the url of the leaderboard
-     * @return the McRankings instance
-     * @throws IllegalArgumentException if the plugin name contains white spaces
-     * @see    McRankings
-     */
     public McRankings withPluginName(String pluginName) {
         if(pluginName.contains(" ")) {
             throw new IllegalArgumentException("Please do not use white-spaces in your plugin name!");
@@ -64,16 +52,6 @@ public class McRankings {
         return this;
     }
 
-    /**
-     * Gets a leaderboard instance for the specified leaderboard ID.
-     *
-     * @param  leaderboardId the id of the leaderboard, must be unique
-     * @param  title the title of the leaderboard, displayed on the website
-     * @param  metric the metric of the leaderboard, shown behind the score (e.g., 'wins')
-     * @param  higherIsBetter set this to true if a higher score is better than a lower score
-     * @return a leaderboard instance
-     * @see    Leaderboard
-     */
     public Leaderboard getLeaderboard(int leaderboardId, String title, String metric, boolean higherIsBetter) {
         String leaderboardConfigPath = "leaderboards." + pluginName + "." + leaderboardId;
 
@@ -82,15 +60,14 @@ public class McRankings {
                     leaderboardId,
                     yamlConfiguration.getString(leaderboardConfigPath + ".title"),
                     yamlConfiguration.getString(leaderboardConfigPath + ".metric"),
-                    yamlConfiguration.getBoolean(leaderboardConfigPath + ".higherIsBetter"),
-                    javaPlugin
+                    yamlConfiguration.getBoolean(leaderboardConfigPath + ".higherIsBetter")
             );
 
             leaderboard.secretKey = yamlConfiguration.getString(leaderboardConfigPath + ".secret-key");
 
             registerLeaderboard(leaderboard);
-
             return leaderboard;
+
         } else {
             yamlConfiguration.set(leaderboardConfigPath + ".title", title);
             yamlConfiguration.set(leaderboardConfigPath + ".metric", metric);
@@ -109,7 +86,7 @@ public class McRankings {
         requestBody.addProperty("serverKey", getServerKey());
         requestBody.addProperty("license", getLicense());
 
-        log(Level.INFO, "Connecting with mc-rankings.com...");
+        log(Level.INFO, "Connecting to mc-rankings.com...");
         sendRequest("server/register", requestBody, RequestType.SERVER);
     }
 
@@ -160,6 +137,7 @@ public class McRankings {
                     }
                     reader.close();
 
+                    log(Level.WARNING, "Could not connect to mc-rankings.com");
                     log(Level.WARNING, response.toString());
 
                 } catch (IOException e) {
@@ -233,9 +211,6 @@ public class McRankings {
         SERVER, LEADERBOARD, SCORE
     }
 
-    /**
-     * Leaderboard class to access leaderboard features
-     */
     public class Leaderboard {
         private final int leaderboardId;
         private final String title;
@@ -243,53 +218,33 @@ public class McRankings {
         private final boolean higherIsBetter;
         private String secretKey;
 
-        private final JavaPlugin javaPlugin;
-
-        /**
-         * Returns a leaderboard instance to access features
-         *
-         * @param  leaderboardId the id of the leaderboard, has to be unique
-         * @param  title the title of the leaderboard, will be displayed on the website
-         * @param  metric the metric of the leaderboard, this is a value that is shown behind the score, e.g. 'wins'
-         * @param  higherIsBetter set this to true if a higher score is better than a lower score
-         * @param  javaPlugin the instance of the JavaPlugin
-         * @see         Leaderboard
-         */
-        public Leaderboard(int leaderboardId, String title, String metric, boolean higherIsBetter, JavaPlugin javaPlugin) {
+        public Leaderboard(int leaderboardId, String title, String metric, boolean higherIsBetter) {
             this.leaderboardId = leaderboardId;
             this.title = title;
             this.metric = metric;
             this.higherIsBetter = higherIsBetter;
-            this.javaPlugin = javaPlugin;
         }
 
-        /**
-         * Returns the url to access the leaderboard with your browser
-         *
-         * @return      the url to access the leaderboard
-         * @see         String
-         */
         public String getUrl() {
             return "https://mc-rankings.com/" + getServerName() + "/" + pluginName + "/" + leaderboardId;
         }
 
-        /**
-         * Sets a new score to a specific player
-         *
-         * @param player the player to set a new score
-         * @param score the new score of the player
-         * @see         String
-         */
         public void setScore(Player player, long score) {
-            Bukkit.getScheduler().runTaskAsynchronously(javaPlugin, () -> {
-                JsonObject requestBody = new JsonObject();
-                requestBody.addProperty("secretKey", secretKey);
-                requestBody.addProperty("uuid", player.getUniqueId().toString());
-                requestBody.addProperty("username", player.getName());
-                requestBody.addProperty("score", score);
+            publishScore(player.getUniqueId(), player.getName(), score);
+        }
 
-                sendRequest("leaderboard/score", requestBody, RequestType.SCORE);
-            });
+        public void setScore(UUID uuid, String playerName, long score) {
+            publishScore(uuid, playerName, score);
+        }
+
+        private void publishScore(UUID uuid, String playerName, long score) {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("secretKey", secretKey);
+            requestBody.addProperty("uuid", uuid.toString());
+            requestBody.addProperty("username", playerName);
+            requestBody.addProperty("score", score);
+
+            sendRequest("leaderboard/score", requestBody, RequestType.SCORE);
         }
     }
 }
