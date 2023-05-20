@@ -41,36 +41,20 @@
     </repositories>
 
     <dependencies>
-        <!--Spigot API-->
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
             <version>1.19.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-war-plugin -->
-
-
     </dependencies>
 
     <distributionManagement>
-        <!-- ... Some other Distribution repository definitions -->
-
         <repository>
             <id>repsy</id>
             <name>mc-rankings</name>
             <url>https://repo.repsy.io/mvn/hannes/mc-rankings</url>
         </repository>
-
-        <!-- ... Some other Distribution repository definitions -->
     </distributionManagement>
-
-    <build>
-        <plugins>
-
-        </plugins>
-    </build>
-
-
 
 </project>
