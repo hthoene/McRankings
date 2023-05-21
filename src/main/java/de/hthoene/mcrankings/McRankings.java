@@ -27,7 +27,7 @@ import java.util.logging.Level;
  * A full guide can be found <a href="https://mc-rankings.com/guide">here</a>
  *
  * @author Hannes Thoene
- * @version 1.2.0
+ * @version 1.2.2
  * @since 20.05.2023
  */
 public class McRankings {
@@ -146,7 +146,13 @@ public class McRankings {
                     }
                     reader.close();
 
-                    log(Level.WARNING, "Could not connect to mc-rankings.com");
+                    switch (requestType) {
+                        case SERVER -> log(Level.WARNING, "Could not connect to mc-rankings.com");
+                        case SCORE -> log(Level.WARNING, "Could not update score");
+                        case BULK ->  log(Level.WARNING, "Could not execute bulk task");
+                        case LEADERBOARD -> log(Level.WARNING, "Could not update leaderboard");
+                    }
+
                     log(Level.WARNING, response.toString());
 
                 } catch (IOException e) {
@@ -224,7 +230,7 @@ public class McRankings {
     private class BulkScoreRequest {
         private String serverKey;
         private String secretKey;
-        private List<PlayerScore> scoreList = new ArrayList<>();
+        private List<PlayerScore> scores = new ArrayList<>();
     }
 
     public static class PlayerScore {
@@ -278,7 +284,8 @@ public class McRankings {
             BulkScoreRequest request = new BulkScoreRequest();
             request.serverKey = getServerKey();
             request.secretKey = secretKey;
-            request.scoreList.addAll(playerScores);
+            request.scores.addAll(playerScores);
+
             sendRequest("leaderboard/scores", gson.fromJson(gson.toJson(request), JsonObject.class), RequestType.BULK);
         }
 
