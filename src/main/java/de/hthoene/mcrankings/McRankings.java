@@ -190,7 +190,7 @@ public class McRankings {
         SecureRandom random = new SecureRandom();
         StringBuilder key = new StringBuilder();
 
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < 14; i++) {
             int randomIndex = random.nextInt(allowedCharacters.length());
             char randomChar = allowedCharacters.charAt(randomIndex);
             key.append(randomChar);
