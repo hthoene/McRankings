@@ -39,6 +39,7 @@ public class McRankings {
     private static final String API_URL = "https://mc-rankings.com/api/v1/";
     private boolean logInfos = true;
     private boolean connected = false;
+    private long delay = 0;
 
     public McRankings(JavaPlugin javaPlugin) {
         this.javaPlugin = javaPlugin;
@@ -111,6 +112,20 @@ public class McRankings {
         requestBody.addProperty("higherIsBetter", leaderboard.higherIsBetter);
 
         sendRequest("leaderboard/register", requestBody, RequestType.LEADERBOARD);
+        setDelay(2000);
+    }
+
+    private void setDelay(long millis) {
+        this.delay = millis;
+    }
+
+    private void runDelay() {
+        try {
+            Thread.sleep(delay);
+            delay = 0;
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void sendRequest(String endpoint, JsonObject requestBody, RequestType requestType) {
@@ -118,6 +133,21 @@ public class McRankings {
             @Override
             public void run() {
                 try {
+                    if(requestType != RequestType.SERVER && !connected) {
+                        switch (requestType) {
+                            case LEADERBOARD:
+                                Thread.sleep(1000);
+                                break;
+                            case SCORE:
+                            case BULK:
+                                Thread.sleep(2000);
+                                break;
+                        }
+                    }
+
+                    if(requestType != RequestType.SERVER)
+                        runDelay();
+
                     URL url = new URL(API_URL + endpoint);
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("POST");
@@ -171,6 +201,8 @@ public class McRankings {
 
                 } catch (IOException e) {
                     log(Level.WARNING, e.getMessage());
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
             }
         });
