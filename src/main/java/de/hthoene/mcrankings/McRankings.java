@@ -38,6 +38,7 @@ public class McRankings {
     private YamlConfiguration yamlConfiguration;
     private static final String API_URL = "https://mc-rankings.com/api/v1/";
     private boolean logInfos = true;
+    private boolean connected = false;
 
     public McRankings(JavaPlugin javaPlugin) {
         this.javaPlugin = javaPlugin;
@@ -137,6 +138,7 @@ public class McRankings {
                     if (responseCode < 400) {
                         if(requestType == RequestType.SERVER) {
                             log(Level.INFO, "Successfully connected to mc-rankings.com");
+                            connected = true;
                         }
                         return;
                     }
@@ -188,9 +190,11 @@ public class McRankings {
                 yamlConfiguration.addDefault("license-key", generateKey());
                 yamlConfiguration.addDefault("server-key", generateKey());
                 yamlConfiguration.addDefault("server-name", UUID.randomUUID().toString());
+                log(Level.WARNING, "mc-rankings.com requires one more server reload for the initial setup to take effect.");
                 saveConfig();
             } else {
                 yamlConfiguration = YamlConfiguration.loadConfiguration(configurationFile);
+                connected = true;
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
