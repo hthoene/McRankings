@@ -1,7 +1,9 @@
 package de.hthoene.mcrankings;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -11,6 +13,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -23,7 +27,7 @@ import java.util.logging.Level;
  * A full guide can be found <a href="https://mc-rankings.com/guide">here</a>
  *
  * @author Hannes Thoene
- * @version 1.1.0
+ * @version 1.2.0
  * @since 20.05.2023
  */
 public class McRankings {
@@ -32,8 +36,8 @@ public class McRankings {
     private String pluginName;
     private final File configurationFile;
     private YamlConfiguration yamlConfiguration;
-
     private static final String API_URL = "https://mc-rankings.com/api/v1/";
+    private boolean logInfos = true;
 
     public McRankings(JavaPlugin javaPlugin) {
         this.javaPlugin = javaPlugin;
@@ -49,6 +53,11 @@ public class McRankings {
             throw new IllegalArgumentException("Please do not use white-spaces in your plugin name!");
         }
         this.pluginName = pluginName;
+        return this;
+    }
+
+    public McRankings withoutLogging() {
+        this.logInfos = false;
         return this;
     }
 
@@ -148,7 +157,8 @@ public class McRankings {
     }
 
     private void log(Level level, String message) {
-        javaPlugin.getLogger().log(level, "[mc-rankings.com] " + message);
+        if(level == Level.INFO && !logInfos) return;
+        javaPlugin.getLogger().log(level, " > mc-rankings.com > " + message);
     }
 
     private void createConfiguration() {
@@ -208,7 +218,25 @@ public class McRankings {
     }
 
     private enum RequestType {
-        SERVER, LEADERBOARD, SCORE
+        SERVER, LEADERBOARD, SCORE, BULK
+    }
+
+    private class BulkScoreRequest {
+        private String serverKey;
+        private String secretKey;
+        private List<PlayerScore> scoreList = new ArrayList<>();
+    }
+
+    public class PlayerScore {
+        private UUID uuid;
+        private String username;
+        private long score;
+
+        public PlayerScore(UUID uuid, String username, long score) {
+            this.uuid = uuid;
+            this.username = username;
+            this.score = score;
+        }
     }
 
     public class Leaderboard {
@@ -229,21 +257,37 @@ public class McRankings {
             return "https://mc-rankings.com/" + getServerName() + "/" + pluginName + "/" + leaderboardId;
         }
 
+        public void setScore(OfflinePlayer offlinePlayer, long score) {
+            publishScore(new PlayerScore(offlinePlayer.getUniqueId(), offlinePlayer.getName(), score));
+        }
+
         public void setScore(Player player, long score) {
-            publishScore(player.getUniqueId(), player.getName(), score);
+            publishScore(new PlayerScore(player.getUniqueId(), player.getName(), score));
         }
 
         public void setScore(UUID uuid, String playerName, long score) {
-            publishScore(uuid, playerName, score);
+            publishScore(new PlayerScore(uuid, playerName, score));
         }
 
-        private void publishScore(UUID uuid, String playerName, long score) {
+        public void setScore(PlayerScore playerScore) {
+            publishScore(playerScore);
+        }
+
+        public void setScores(List<PlayerScore> playerScores) {
+            Gson gson = new Gson();
+            BulkScoreRequest request = new BulkScoreRequest();
+            request.serverKey = getServerKey();
+            request.secretKey = secretKey;
+            request.scoreList.addAll(playerScores);
+            sendRequest("leaderboard/scores", gson.fromJson(gson.toJson(request), JsonObject.class), RequestType.BULK);
+        }
+
+        private void publishScore(PlayerScore playerScore) {
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("secretKey", secretKey);
-            requestBody.addProperty("uuid", uuid.toString());
-            requestBody.addProperty("username", playerName);
-            requestBody.addProperty("score", score);
-
+            requestBody.addProperty("uuid", playerScore.uuid.toString());
+            requestBody.addProperty("username", playerScore.username);
+            requestBody.addProperty("score", playerScore.score);
             sendRequest("leaderboard/score", requestBody, RequestType.SCORE);
         }
     }
