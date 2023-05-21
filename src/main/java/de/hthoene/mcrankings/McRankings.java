@@ -96,7 +96,7 @@ public class McRankings {
         requestBody.addProperty("serverKey", getServerKey());
         requestBody.addProperty("license", getLicense());
 
-        log(Level.INFO, "Connecting to mc-rankings.com...");
+        log(Level.FINE, "Connecting to mc-rankings.com...");
         sendRequest("server/register", requestBody, RequestType.SERVER);
     }
 
@@ -178,7 +178,7 @@ public class McRankings {
 
     private void log(Level level, String message) {
         if(level == Level.INFO && !logInfos) return;
-        javaPlugin.getLogger().log(level, "> mc-rankings.com > " + message);
+        javaPlugin.getLogger().log(level, "(mc-rankings.com) > " + message);
     }
 
     private void createConfiguration() {
