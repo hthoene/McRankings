@@ -227,7 +227,7 @@ public class McRankings {
         private List<PlayerScore> scoreList = new ArrayList<>();
     }
 
-    public class PlayerScore {
+    public static class PlayerScore {
         private UUID uuid;
         private String username;
         private long score;
