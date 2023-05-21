@@ -164,7 +164,7 @@ public class McRankings {
 
     private void log(Level level, String message) {
         if(level == Level.INFO && !logInfos) return;
-        javaPlugin.getLogger().log(level, " > mc-rankings.com > " + message);
+        javaPlugin.getLogger().log(level, "> mc-rankings.com > " + message);
     }
 
     private void createConfiguration() {
