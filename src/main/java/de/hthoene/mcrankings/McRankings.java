@@ -121,6 +121,10 @@ public class McRankings {
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("POST");
                     connection.setRequestProperty("Content-Type", "application/json");
+                    connection.setRequestProperty("Accept", "*/*");
+                    connection.setRequestProperty("User-Agent", "PostmanRuntime/7.28.4");
+                    connection.setRequestProperty("Connection", "keep-alive");
+                    connection.setRequestProperty("Accept-Encoding", "gzip, deflate, br");
                     connection.setDoOutput(true);
 
                     try (OutputStream outputStream = connection.getOutputStream();
