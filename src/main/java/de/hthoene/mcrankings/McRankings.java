@@ -27,7 +27,7 @@ import java.util.logging.Level;
  * A full guide can be found <a href="https://mc-rankings.com/guide">here</a>
  *
  * @author Hannes Thoene
- * @version 1.2.2
+ * @version 1.2.3
  * @since 20.05.2023
  */
 public class McRankings {
@@ -147,10 +147,18 @@ public class McRankings {
                     reader.close();
 
                     switch (requestType) {
-                        case SERVER -> log(Level.WARNING, "Could not connect to mc-rankings.com");
-                        case SCORE -> log(Level.WARNING, "Could not update score");
-                        case BULK ->  log(Level.WARNING, "Could not execute bulk task");
-                        case LEADERBOARD -> log(Level.WARNING, "Could not update leaderboard");
+                        case SERVER:
+                            log(Level.WARNING, "Could not connect to mc-rankings.com");
+                            break;
+                        case SCORE:
+                            log(Level.WARNING, "Could not update score");
+                            break;
+                        case BULK:
+                            log(Level.WARNING, "Could not execute bulk task");
+                            break;
+                        case LEADERBOARD:
+                            log(Level.WARNING, "Could not update leaderboard");
+                            break;
                     }
 
                     log(Level.WARNING, response.toString());
