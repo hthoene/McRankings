@@ -146,7 +146,7 @@ public class McRankings {
                         }
                     }
 
-                    if(requestType != RequestType.SERVER)
+                    if(requestType != RequestType.SERVER && delay > 0)
                         runDelay();
 
                     URL url = new URL(API_URL + endpoint);
@@ -329,6 +329,12 @@ public class McRankings {
             jsonObject.addProperty("secretKey", secretKey);
             jsonObject.addProperty("uuid", uuid.toString());
             sendRequest("score/delete", jsonObject, RequestType.SCORE);
+        }
+
+        public void clear() {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("secretKey", secretKey);
+            sendRequest("score/deleteAll", jsonObject, RequestType.SCORE);
         }
 
         public void setScore(PlayerScore playerScore) {
