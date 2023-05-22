@@ -1,7 +1,6 @@
 package de.hthoene.mcrankings;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -28,7 +27,7 @@ import java.util.logging.Level;
  * A full guide can be found <a href="https://mc-rankings.com/guide">here</a>
  *
  * @author Hannes Thoene
- * @version 1.2.6
+ * @version 1.2.7
  * @since 20.05.2023
  */
 public class McRankings {
@@ -72,7 +71,8 @@ public class McRankings {
                     leaderboardId,
                     yamlConfiguration.getString(leaderboardConfigPath + ".title"),
                     yamlConfiguration.getString(leaderboardConfigPath + ".metric"),
-                    yamlConfiguration.getBoolean(leaderboardConfigPath + ".higherIsBetter")
+                    yamlConfiguration.getBoolean(leaderboardConfigPath + ".higherIsBetter"),
+                    yamlConfiguration.getBoolean(leaderboardConfigPath + ".enabled", true)
             );
 
             leaderboard.secretKey = yamlConfiguration.getString(leaderboardConfigPath + ".secret-key");
@@ -85,6 +85,7 @@ public class McRankings {
             yamlConfiguration.set(leaderboardConfigPath + ".metric", metric);
             yamlConfiguration.set(leaderboardConfigPath + ".higherIsBetter", higherIsBetter);
             yamlConfiguration.set(leaderboardConfigPath + ".secret-key", generateKey());
+            yamlConfiguration.set(leaderboardConfigPath + ".enabled", true);
 
             saveConfig();
         }
@@ -111,6 +112,7 @@ public class McRankings {
         requestBody.addProperty("metric", leaderboard.metric);
         requestBody.addProperty("leaderboardId", leaderboard.leaderboardId);
         requestBody.addProperty("higherIsBetter", leaderboard.higherIsBetter);
+        requestBody.addProperty("enabled", leaderboard.enabled);
 
         sendRequest("leaderboard/register", requestBody, RequestType.LEADERBOARD);
         setDelay(2000);
@@ -299,13 +301,16 @@ public class McRankings {
         private final String title;
         private final String metric;
         private final boolean higherIsBetter;
+        private final boolean enabled;
         private String secretKey;
 
-        public Leaderboard(int leaderboardId, String title, String metric, boolean higherIsBetter) {
+
+        public Leaderboard(int leaderboardId, String title, String metric, boolean higherIsBetter, boolean enabled) {
             this.leaderboardId = leaderboardId;
             this.title = title;
             this.metric = metric;
             this.higherIsBetter = higherIsBetter;
+            this.enabled = enabled;
         }
 
         public String getUrl() {
@@ -325,6 +330,7 @@ public class McRankings {
         }
 
         public void deleteEntry(UUID uuid) {
+            if(!enabled) return;
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("secretKey", secretKey);
             jsonObject.addProperty("uuid", uuid.toString());
@@ -332,6 +338,7 @@ public class McRankings {
         }
 
         public void clear() {
+            if(!enabled) return;
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("secretKey", secretKey);
             sendRequest("score/deleteAll", jsonObject, RequestType.SCORE);
@@ -342,6 +349,7 @@ public class McRankings {
         }
 
         public void setScores(List<PlayerScore> playerScores) {
+            if(!enabled) return;
             Gson gson = new Gson();
             BulkScoreRequest request = new BulkScoreRequest();
             request.serverKey = getServerKey();
@@ -352,6 +360,7 @@ public class McRankings {
         }
 
         private void publishScore(PlayerScore playerScore) {
+            if(!enabled) return;
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("secretKey", secretKey);
             requestBody.addProperty("uuid", playerScore.uuid.toString());
