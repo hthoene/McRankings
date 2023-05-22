@@ -38,6 +38,7 @@ public class McRankings {
     private YamlConfiguration yamlConfiguration;
     private static final String API_URL = "https://mc-rankings.com/api/v1/";
     private boolean logInfos = true;
+    private boolean libraryEnabled = true;
     private boolean connected = false;
     private long delay = 0;
 
@@ -132,6 +133,7 @@ public class McRankings {
     }
 
     private void sendRequest(String endpoint, JsonObject requestBody, RequestType requestType) {
+        if(!libraryEnabled) return;
         Bukkit.getScheduler().runTaskAsynchronously(javaPlugin, new Runnable() {
             @Override
             public void run() {
@@ -225,11 +227,13 @@ public class McRankings {
                 yamlConfiguration.addDefault("license-key", generateKey());
                 yamlConfiguration.addDefault("server-key", generateKey());
                 yamlConfiguration.addDefault("server-name", UUID.randomUUID().toString());
+                yamlConfiguration.addDefault("enabled", true);
                 log(Level.WARNING, "mc-rankings.com requires one more server reload for the initial setup to take effect.");
                 saveConfig();
             } else {
                 yamlConfiguration = YamlConfiguration.loadConfiguration(configurationFile);
                 connected = true;
+                libraryEnabled = yamlConfiguration.getBoolean("enabled", true);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -259,6 +263,7 @@ public class McRankings {
     }
 
     private void loadServer() {
+        if(!libraryEnabled) return;
         Bukkit.getScheduler().runTaskAsynchronously(javaPlugin, this::registerServer);
     }
 
