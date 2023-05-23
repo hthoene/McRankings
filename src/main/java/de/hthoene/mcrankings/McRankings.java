@@ -27,7 +27,7 @@ import java.util.logging.Level;
  * A full guide can be found <a href="https://mc-rankings.com/guide">here</a>
  *
  * @author Hannes Thoene
- * @version 1.2.7
+ * @version 1.2.8
  * @since 20.05.2023
  */
 public class McRankings {
@@ -36,7 +36,7 @@ public class McRankings {
     private String pluginName;
     private final File configurationFile;
     private YamlConfiguration yamlConfiguration;
-    private static final String API_URL = "https://mc-rankings.com/api/v1/";
+    private static String API_URL = "https://mc-rankings.com/api/v1/";
     private boolean logInfos = true;
     private boolean libraryEnabled = true;
     private boolean connected = false;
@@ -227,12 +227,14 @@ public class McRankings {
                 yamlConfiguration.addDefault("license-key", generateKey());
                 yamlConfiguration.addDefault("server-key", generateKey());
                 yamlConfiguration.addDefault("server-name", UUID.randomUUID().toString());
+                yamlConfiguration.addDefault("api-endpoint", API_URL);
                 yamlConfiguration.addDefault("enabled", true);
                 log(Level.WARNING, "mc-rankings.com requires one more server reload for the initial setup to take effect.");
                 saveConfig();
             } else {
                 yamlConfiguration = YamlConfiguration.loadConfiguration(configurationFile);
                 connected = true;
+                API_URL = yamlConfiguration.getString("api-endpoint", API_URL);
                 libraryEnabled = yamlConfiguration.getBoolean("enabled", true);
             }
         } catch (IOException e) {
