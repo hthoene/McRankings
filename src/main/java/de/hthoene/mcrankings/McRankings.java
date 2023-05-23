@@ -233,8 +233,8 @@ public class McRankings {
                 saveConfig();
             } else {
                 yamlConfiguration = YamlConfiguration.loadConfiguration(configurationFile);
-                connected = true;
                 API_URL = yamlConfiguration.getString("api-endpoint", API_URL);
+                connected = true;
                 libraryEnabled = yamlConfiguration.getBoolean("enabled", true);
             }
         } catch (IOException e) {
