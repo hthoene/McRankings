@@ -286,13 +286,13 @@ public class McRankings {
     private class BulkScoreRequest {
         private String serverKey;
         private String secretKey;
-        private List<PlayerScore> scores = new ArrayList<>();
+        private final List<PlayerScore> scores = new ArrayList<>();
     }
 
     public static class PlayerScore {
-        private UUID uuid;
-        private String username;
-        private long score;
+        private final UUID uuid;
+        private final String username;
+        private final long score;
 
         public PlayerScore(UUID uuid, String username, long score) {
             this.uuid = uuid;
