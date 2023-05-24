@@ -324,7 +324,7 @@ public class McRankings {
         }
 
         public String getUrl() {
-            return "https://mc-rankings.com/" + getServerName() + "/" + pluginName + "/" + leaderboardId;
+            return FRONTEND_URL + getServerName() + "/" + pluginName + "/" + leaderboardId;
         }
 
         public void setScore(OfflinePlayer offlinePlayer, long score) {
