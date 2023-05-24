@@ -37,7 +37,7 @@ public class McRankings {
     private final File configurationFile;
     private YamlConfiguration yamlConfiguration;
     private static String API_URL = "https://mc-rankings.com/api/v1/";
-    private static String FRONTEND_URL = "https://mc-rankings.com/";
+    private static String FRONTEND_URL = "https://mc-rankings.com/<serverName>/<pluginName>/<id>";
     private boolean logInfos = true;
     private boolean libraryEnabled = true;
     private boolean connected = false;
@@ -324,7 +324,7 @@ public class McRankings {
         }
 
         public String getUrl() {
-            return FRONTEND_URL + getServerName() + "/" + pluginName + "/" + leaderboardId;
+            return FRONTEND_URL.replace("<serverName>", getServerName()).replace("<pluginName>", pluginName).replace("<id>", String.valueOf(leaderboardId));
         }
 
         public void setScore(OfflinePlayer offlinePlayer, long score) {
