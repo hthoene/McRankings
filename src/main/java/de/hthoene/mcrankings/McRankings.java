@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 /**
@@ -117,7 +118,7 @@ public class McRankings {
         requestBody.addProperty("enabled", leaderboard.enabled);
 
         sendRequest("leaderboard/register", requestBody, RequestType.LEADERBOARD);
-        setDelay(2000);
+        setDelay(500);
     }
 
     private void setDelay(long millis) {
@@ -133,85 +134,90 @@ public class McRankings {
         }
     }
 
-    private void sendRequest(String endpoint, JsonObject requestBody, RequestType requestType) {
-        if(!libraryEnabled) return;
-        Bukkit.getScheduler().runTaskAsynchronously(javaPlugin, new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    if(requestType != RequestType.SERVER && !connected) {
-                        switch (requestType) {
-                            case LEADERBOARD:
-                                Thread.sleep(1000);
-                                break;
-                            case SCORE:
-                            case BULK:
-                                Thread.sleep(2000);
-                                break;
-                        }
-                    }
+    private CompletableFuture<RequestResult> sendRequest(String endpoint, JsonObject requestBody, RequestType requestType) {
 
-                    if(requestType != RequestType.SERVER && delay > 0)
-                        runDelay();
+        if(!libraryEnabled) return CompletableFuture.supplyAsync(() -> RequestResult.DISABLED);
 
-                    URL url = new URL(API_URL + endpoint);
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                    connection.setRequestMethod("POST");
-                    connection.setRequestProperty("Content-Type", "application/json");
-                    connection.setRequestProperty("Accept", "*/*");
-                    connection.setRequestProperty("User-Agent", "PostmanRuntime/7.28.4");
-                    connection.setRequestProperty("Connection", "keep-alive");
-                    connection.setRequestProperty("Accept-Encoding", "gzip, deflate, br");
-                    connection.setDoOutput(true);
-
-                    try (OutputStream outputStream = connection.getOutputStream();
-                         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream))) {
-                        writer.write(requestBody.toString());
-                    }
-
-                    int responseCode = connection.getResponseCode();
-
-                    if (responseCode < 400) {
-                        if(requestType == RequestType.SERVER) {
-                            log(Level.INFO, "Successfully connected to mc-rankings.com");
-                            connected = true;
-                        }
-                        return;
-                    }
-
-                    StringBuilder response = new StringBuilder();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
-
-                    String inputLine;
-                    while ((inputLine = reader.readLine()) != null) {
-                        response.append(inputLine);
-                    }
-                    reader.close();
-
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                if(requestType != RequestType.SERVER && !connected) {
                     switch (requestType) {
-                        case SERVER:
-                            log(Level.WARNING, "Could not connect to mc-rankings.com");
+                        case LEADERBOARD:
+                            Thread.sleep(500);
                             break;
                         case SCORE:
-                            log(Level.WARNING, "Could not update score");
-                            break;
                         case BULK:
-                            log(Level.WARNING, "Could not execute bulk task");
-                            break;
-                        case LEADERBOARD:
-                            log(Level.WARNING, "Could not update leaderboard");
+                            Thread.sleep(1000);
                             break;
                     }
-
-                    log(Level.WARNING, response.toString());
-
-                } catch (IOException e) {
-                    log(Level.WARNING, e.getMessage());
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
                 }
+
+                if(requestType != RequestType.SERVER && delay > 0)
+                    runDelay();
+
+                URL url = new URL(API_URL + endpoint);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestProperty("Accept", "*/*");
+                connection.setRequestProperty("User-Agent", "PostmanRuntime/7.28.4");
+                connection.setRequestProperty("Connection", "keep-alive");
+                connection.setRequestProperty("Accept-Encoding", "gzip, deflate, br");
+                connection.setDoOutput(true);
+
+                try (OutputStream outputStream = connection.getOutputStream();
+                     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream))) {
+                    writer.write(requestBody.toString());
+                }
+
+                int responseCode = connection.getResponseCode();
+
+                if (responseCode < 400) {
+                    if (requestType == RequestType.SERVER) {
+                        log(Level.INFO, "Successfully connected to mc-rankings.com");
+                        connected = true;
+                    }
+                    return RequestResult.SUCCESS;
+                }
+
+                StringBuilder response = new StringBuilder();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
+
+                String inputLine;
+                while ((inputLine = reader.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                reader.close();
+
+                switch (requestType) {
+                    case SERVER:
+                        log(Level.WARNING, "Could not connect to mc-rankings.com");
+                        break;
+                    case SCORE:
+                        log(Level.WARNING, "Could not update score");
+                        break;
+                    case BULK:
+                        log(Level.WARNING, "Could not execute bulk task");
+                        break;
+                    case LEADERBOARD:
+                        log(Level.WARNING, "Could not update leaderboard");
+                        break;
+                }
+
+                log(Level.WARNING, response.toString());
+
+            } catch (IOException e) {
+                log(Level.WARNING, e.getMessage());
+            } catch (InterruptedException e) {
+                return RequestResult.ERROR;
             }
+
+            return RequestResult.ERROR;
+        }).exceptionally(ex -> {
+            log(Level.WARNING, ex.getMessage());
+            return RequestResult.ERROR;
         });
+
     }
 
     private void log(Level level, String message) {
@@ -294,6 +300,10 @@ public class McRankings {
         private final List<PlayerScore> scores = new ArrayList<>();
     }
 
+    public enum RequestResult {
+        SUCCESS, ERROR, DISABLED
+    }
+
     public static class PlayerScore {
         private final UUID uuid;
         private final String username;
@@ -327,57 +337,57 @@ public class McRankings {
             return FRONTEND_URL.replace("<serverName>", getServerName()).replace("<pluginName>", pluginName).replace("<id>", String.valueOf(leaderboardId));
         }
 
-        public void setScore(OfflinePlayer offlinePlayer, long score) {
-            publishScore(new PlayerScore(offlinePlayer.getUniqueId(), offlinePlayer.getName(), score));
+        public CompletableFuture<RequestResult> setScore(OfflinePlayer offlinePlayer, long score) {
+            return publishScore(new PlayerScore(offlinePlayer.getUniqueId(), offlinePlayer.getName(), score));
         }
 
-        public void setScore(Player player, long score) {
-            publishScore(new PlayerScore(player.getUniqueId(), player.getName(), score));
+        public CompletableFuture<RequestResult> setScore(Player player, long score) {
+            return publishScore(new PlayerScore(player.getUniqueId(), player.getName(), score));
         }
 
-        public void setScore(UUID uuid, String playerName, long score) {
-            publishScore(new PlayerScore(uuid, playerName, score));
+        public CompletableFuture<RequestResult> setScore(UUID uuid, String playerName, long score) {
+            return publishScore(new PlayerScore(uuid, playerName, score));
         }
 
-        public void deleteEntry(UUID uuid) {
-            if(!enabled) return;
+        public CompletableFuture<RequestResult> deleteEntry(UUID uuid) {
+            if(!enabled) return CompletableFuture.supplyAsync(() -> RequestResult.DISABLED);
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("secretKey", secretKey);
             jsonObject.addProperty("uuid", uuid.toString());
-            sendRequest("score/delete", jsonObject, RequestType.SCORE);
+            return sendRequest("score/delete", jsonObject, RequestType.SCORE);
         }
 
-        public void clear() {
-            if(!enabled) return;
+        public CompletableFuture<RequestResult> clear() {
+            if(!enabled) return CompletableFuture.supplyAsync(() -> RequestResult.DISABLED);
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("secretKey", secretKey);
-            sendRequest("score/deleteAll", jsonObject, RequestType.SCORE);
+            return sendRequest("score/deleteAll", jsonObject, RequestType.SCORE);
         }
 
-        public void setScore(PlayerScore playerScore) {
-            publishScore(playerScore);
+        public CompletableFuture<RequestResult> setScore(PlayerScore playerScore) {
+            return publishScore(playerScore);
         }
 
-        public void setScores(List<PlayerScore> playerScores) {
-            if(!enabled) return;
+        public CompletableFuture<RequestResult> setScores(List<PlayerScore> playerScores) {
+            if(!enabled) return CompletableFuture.supplyAsync(() -> RequestResult.DISABLED);
             Gson gson = new Gson();
             BulkScoreRequest request = new BulkScoreRequest();
             request.serverKey = getServerKey();
             request.secretKey = secretKey;
             request.scores.addAll(playerScores);
 
-            sendRequest("leaderboard/scores", gson.fromJson(gson.toJson(request), JsonObject.class), RequestType.BULK);
+            return sendRequest("leaderboard/scores", gson.fromJson(gson.toJson(request), JsonObject.class), RequestType.BULK);
         }
 
-        private void publishScore(PlayerScore playerScore) {
-            if(!enabled) return;
+        private CompletableFuture<RequestResult> publishScore(PlayerScore playerScore) {
+            if(!enabled) return CompletableFuture.supplyAsync(() -> RequestResult.DISABLED);
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("secretKey", secretKey);
             requestBody.addProperty("uuid", playerScore.uuid.toString());
             requestBody.addProperty("username", playerScore.username);
             requestBody.addProperty("score", playerScore.score);
             requestBody.addProperty("serverKey", getServerKey());
-            sendRequest("leaderboard/score", requestBody, RequestType.SCORE);
+            return sendRequest("leaderboard/score", requestBody, RequestType.SCORE);
         }
     }
 }
